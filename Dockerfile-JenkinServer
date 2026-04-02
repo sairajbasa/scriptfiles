@@ -1,0 +1,12 @@
+FROM ubuntu
+MAINTAINER sairaj <basasairaj025@gmail.com>
+RUN apt update
+RUN apt install wget fontconfig openjdk-21-jre -y
+RUN wget -O /etc/apt/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+RUN echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
+  https://pkg.jenkins.io/debian-stable binary/ | tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+RUN apt update
+RUN apt install jenkins -y
+CMD ["java", "-jar", "/usr/share/java/jenkins.war"]
