@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone') {
+            steps {
+                git 'https://github.com/sairajbasa/java-project-maven-new.git'
+            }
+        }
+
+        stage('validate') {
+            steps {
+                sh 'mvn validate'
+            }
+        }
+
+        stage('compile') {
+            steps {
+                sh 'mvn compile'
+            }
+        }
+
+        stage('test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Scanning Code') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.7.0.1746:sonar'
+                }
+            }
+        }
+        
+        stage('Pacakge') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('upload to s3') {
+            steps {
+                s3Upload consoleLogLevel: 'INFO', dontSetBuildResultOnFailure: false, dontWaitForConcurrentBuildCompletion: false,
+        entries: [[bucket: 'artifact-bucket143', excludedFile: '', flatten: false, gzipFiles: false, keepForever: false,
+        managedArtifacts: false, noUploadOnFailure: false, selectedRegion: 'ap-south-1', showDirectlyInBrowser: false, sourceFile: 'target/myapp.war',
+        storageClass: 'STANDARD', uploadFromSlave: false, useServerSideEncryption: false]], pluginFailureResultConstraint: 'FAILURE',
+        profileName: 's3', userMetadata: []
+            }
+        }
+        
+        stage('Deploy to Tomcat') {
+            steps {
+                deploy adapters: [tomcat9(alternativeDeploymentContext: '', credentialsId: 'tomcatcreds', path: '', url: 'http://13.235.17.97:8080')], contextPath: 'app', war: '**/*.war'
+            }
+        }
+    }
+}
